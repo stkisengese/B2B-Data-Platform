@@ -1,4 +1,4 @@
-.PHONY: build test lint run up down
+.PHONY: build test lint run up down migrate
 
 # Go parameters
 GO_CMD=go
@@ -28,6 +28,9 @@ lint:
 
 run:
 	$(GO_RUN) $(SERVER_MAIN)
+
+migrate:
+	$(GO_RUN) $(MIGRATOR_MAIN)
 
 up:
 	$(DOCKER_COMPOSE) up -d
