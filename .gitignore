@@ -20,5 +20,8 @@ go.work
 # Environment variables
 .env
 
+# Database file
+b2b.db
+
 # Build output
 /bin
