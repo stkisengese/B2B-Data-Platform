@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/stkisengese/B2B-Data-Platform/internal/config"
 	"github.com/gin-gonic/gin"
+	"github.com/stkisengese/B2B-Data-Platform/internal/config"
 )
 
 func main() {
