@@ -62,6 +62,22 @@ project-root/
 - **Queue/Cache**: In-memory with persistent SQLite backing
 - **Containerization**: Docker & Docker Compose
 
+## Database
+
+The application uses SQLite as its database. The database file is `b2b.db`.
+
+**Note:** The `b2b.db` file is not committed to version control. It is generated locally.
+
+### Initializing the Database
+
+To initialize the database and run all migrations, run the following command:
+
+```bash
+go run cmd/migrator/main.go
+```
+
+This will create the `b2b.db` file if it doesn't exist and apply all the necessary database migrations.
+
 ## Makefile Commands
 
 The `Makefile` provides several commands to streamline development:
