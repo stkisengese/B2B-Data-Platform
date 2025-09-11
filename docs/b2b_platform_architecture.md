@@ -189,3 +189,37 @@ go run cmd/server/main.go
 - **Concurrent Workers**: Configurable 1-100 workers
 - **Data Quality**: 99%+ after processing pipeline
 - **Uptime**: 99.9% availability target
+
+
+## Recommended Branch Naming Convention
+
+**Format: {type}/{issue-number}-{short-descriptive-name}**
+
+```bash
+Examples from issues:
+Issue	Branch Name
+#1: Project Initialization and Structure	feat/1-project-initialization
+#2: Database Schema Design and Migrations	infra/2-database-schema
+#14: Comprehensive Testing Suite	test/14-testing-suite
+#15: API Documentation and Deployment	docs/15-api-documentation
+```
+
+Branch Type Prefixes
+
+Use these standard prefixes:
+
+    feat/ - New features or functionality
+
+    fix/ - Bug fixes
+
+    docs/ - Documentation changes
+
+    style/ - Code style/formatting changes
+
+    refactor/ - Code refactoring
+
+    test/ - Test-related changes
+
+    chore/ - Maintenance tasks, dependencies
+
+    infra/ - Infrastructure/config changes
