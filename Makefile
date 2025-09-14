@@ -37,3 +37,18 @@ up:
 
 down:
 	$(DOCKER_COMPOSE) down
+
+test-unit:
+	$(GO_TEST) -v ./internal/...
+
+test-integration:
+	$(GO_TEST) -v -tags=integration ./...
+
+test-coverage:
+	$(GO_TEST) -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+
+test-bench:
+	$(GO_TEST) -bench=. -benchmem ./...
+
+.PHONY: test-unit test-integration test-coverage test-bench
