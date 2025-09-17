@@ -89,3 +89,36 @@ func (cb *CircuitBreaker) Execute(fn func() error) error {
 
 	return err
 }
+
+func (cb *CircuitBreaker) recordFailure() {
+	cb.failures++
+	cb.lastFailTime = time.Now()
+
+	switch cb.state {
+	case Closed:
+		if cb.failures >= cb.MaxFailures {
+			cb.state = Open
+		}
+	case HalfOpen:
+		cb.state = Open
+	}
+}
+
+func (cb *CircuitBreaker) recordSuccess() {
+	cb.failures = 0
+
+	switch cb.state {
+	case HalfOpen:
+		cb.halfOpenCalls++
+		if cb.halfOpenCalls >= cb.HalfOpenMaxCalls {
+			cb.state = Closed
+		}
+	}
+}
+
+// GetState returns the current circuit breaker state
+func (cb *CircuitBreaker) GetState() CircuitState {
+	cb.mutex.RLock()
+	defer cb.mutex.RUnlock()
+	return cb.state
+}
