@@ -1,8 +1,10 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -61,4 +63,25 @@ func (sm *SourceManager) ListSources() []string {
 	}
 
 	return names
+}
+
+// CollectFromSource collects data from a specific source
+func (sm *SourceManager) CollectFromSource(ctx context.Context, sourceName string, params CollectionParams) ([]RawRecord, error) {
+	source, err := sm.GetSource(sourceName)
+	if err != nil {
+		return nil, err
+	}
+
+	startTime := time.Now()
+	records, err := source.Collect(ctx, params)
+	duration := time.Since(startTime)
+
+	sm.logger.WithFields(logrus.Fields{
+		"source":   sourceName,
+		"duration": duration,
+		"records":  len(records),
+		"error":    err,
+	}).Info("Data collection completed")
+
+	return records, err
 }
