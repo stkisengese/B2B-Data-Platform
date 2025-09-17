@@ -47,3 +47,25 @@ func NewCircuitBreaker(config CircuitBreakerConfig) *CircuitBreaker {
 		state:            Closed,
 	}
 }
+
+// CanExecute checks if the circuit breaker allows execution
+func (cb *CircuitBreaker) CanExecute() bool {
+	cb.mutex.Lock()
+	defer cb.mutex.Unlock()
+
+	switch cb.state {
+	case Closed:
+		return true
+	case Open:
+		if time.Since(cb.lastFailTime) > cb.ResetTimeout {
+			cb.state = HalfOpen
+			cb.halfOpenCalls = 0
+			return true
+		}
+		return false
+	case HalfOpen:
+		return cb.halfOpenCalls < cb.HalfOpenMaxCalls
+	}
+
+	return false
+}
