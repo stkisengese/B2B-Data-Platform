@@ -69,3 +69,23 @@ func (cb *CircuitBreaker) CanExecute() bool {
 
 	return false
 }
+
+// Execute executes a function with circuit breaker protection
+func (cb *CircuitBreaker) Execute(fn func() error) error {
+	if !cb.CanExecute() {
+		return ErrCircuitBreakerOpen
+	}
+
+	err := fn()
+
+	cb.mutex.Lock()
+	defer cb.mutex.Unlock()
+
+	if err != nil {
+		cb.recordFailure()
+	} else {
+		cb.recordSuccess()
+	}
+
+	return err
+}
