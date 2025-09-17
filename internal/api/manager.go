@@ -85,3 +85,39 @@ func (sm *SourceManager) CollectFromSource(ctx context.Context, sourceName strin
 
 	return records, err
 }
+
+// CollectFromAllSources collects data from all registered sources concurrently
+func (sm *SourceManager) CollectFromAllSources(ctx context.Context, params CollectionParams) (map[string][]RawRecord, map[string]error) {
+	sm.mutex.RLock()
+	sources := make(map[string]DataSource, len(sm.sources))
+	for name, source := range sm.sources {
+		sources[name] = source
+	}
+	sm.mutex.RUnlock()
+
+	results := make(map[string][]RawRecord)
+	errors := make(map[string]error)
+
+	var wg sync.WaitGroup
+	var resultMutex sync.Mutex
+
+	for name, source := range sources {
+		wg.Add(1)
+		go func(sourceName string, src DataSource) {
+			defer wg.Done()
+
+			records, err := sm.CollectFromSource(ctx, sourceName, params)
+
+			resultMutex.Lock()
+			if err != nil {
+				errors[sourceName] = err
+			} else {
+				results[sourceName] = records
+			}
+			resultMutex.Unlock()
+		}(name, source)
+	}
+
+	wg.Wait()
+	return results, errors
+}
