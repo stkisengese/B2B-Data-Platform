@@ -3,3 +3,14 @@ server:
 
 database:
   path: "b2b.db"
+
+datasources:
+  # opencorporates:
+  #   api_key: "${OPENCORPORATES_API_KEY}"
+  #   enabled: false
+  #   rate_limit: 5
+  
+  companieshouse:
+    api_key: "${COMPANIES_HOUSE_API_KEY}"
+    enabled: false
+    rate_limit: 5
