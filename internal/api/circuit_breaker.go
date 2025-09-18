@@ -1,4 +1,3 @@
-// File: internal/api/circuit_breaker.go
 package api
 
 import (
