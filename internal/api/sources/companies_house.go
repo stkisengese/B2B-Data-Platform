@@ -43,7 +43,7 @@ type CompaniesHouseResponse struct {
 func NewCompaniesHouseSource(apiKey string) *CompaniesHouseSource {
 	config := api.ClientConfig{
 		APIName:          "CompaniesHouse",
-		BaseURL:          "https://api.companieshouse.gov.uk",
+		BaseURL:          "https://api.company-information.service.gov.uk",
 		APIKey:           apiKey,
 		RateLimit:        rate.Limit(10), // 10 requests per second
 		RateBurst:        20,
@@ -80,7 +80,7 @@ func (ch *CompaniesHouseSource) Collect(ctx context.Context, params api.Collecti
 		"Accept": "application/json",
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Companies House API request failed: %w", err)
+		return nil, fmt.Errorf(" Companies House API request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
