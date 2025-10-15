@@ -19,15 +19,15 @@ type DatabaseConfig struct {
 }
 
 type DataSourcesConfig struct {
-	// OpenCorporates OpenCorporatesConfig
+	OpenCorporates OpenCorporatesConfig
 	CompaniesHouse CompaniesHouseConfig
 }
 
-// type OpenCorporatesConfig struct {
-// 	APIKey   string
-// 	Enabled  bool
-// 	RateLimit int
-// }
+type OpenCorporatesConfig struct {
+	APIKey    string
+	Enabled   bool
+	RateLimit int
+}
 
 type CompaniesHouseConfig struct {
 	APIKey    string
@@ -43,8 +43,8 @@ func LoadConfig() (config Config, err error) {
 	// Set defaults
 	viper.SetDefault("server.port", 8080)
 	viper.SetDefault("database.path", "b2b.db")
-	// viper.SetDefault("datasources.opencorporates.enabled", false)
-	// viper.SetDefault("datasources.opencorporates.ratelimit", 5)
+	viper.SetDefault("datasources.opencorporates.enabled", false)
+	viper.SetDefault("datasources.opencorporates.ratelimit", 5)
 	viper.SetDefault("datasources.companieshouse.enabled", false)
 	viper.SetDefault("datasources.companieshouse.ratelimit", 10)
 

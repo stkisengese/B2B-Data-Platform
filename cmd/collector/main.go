@@ -30,12 +30,12 @@ func main() {
 		}
 	}
 
-	// if cfg.DataSources.OpenCorporates.Enabled {
-	// 	ocSource := sources.NewOpenCorporatesSource(cfg.DataSources.OpenCorporates.APIKey)
-	// 	if err := sourceManager.RegisterSource(ocSource); err != nil {
-	// 		log.Printf("Failed to register OpenCorporates source: %v", err)
-	// 	}
-	// }
+	if cfg.DataSources.OpenCorporates.Enabled {
+		ocSource := sources.NewOpenCorporatesSource(cfg.DataSources.OpenCorporates.APIKey)
+		if err := sourceManager.RegisterSource(ocSource); err != nil {
+			log.Printf("Failed to register OpenCorporates source: %v", err)
+		}
+	}
 
 	// Example data collection
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
