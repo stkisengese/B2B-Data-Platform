@@ -10,7 +10,7 @@ datasources:
   #   enabled: false
   #   rate_limit: 5
   
-  companieshouse:
-    api_key: "${COMPANIES_HOUSE_API_KEY}"
-    enabled: false
-    rate_limit: 5
+companieshouse:
+  api_key: "${COMPANIES_HOUSE_API_KEY}"
+  enabled: false
+  rate_limit: 10

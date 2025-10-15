@@ -46,7 +46,7 @@ func LoadConfig() (config Config, err error) {
 	// viper.SetDefault("datasources.opencorporates.enabled", false)
 	// viper.SetDefault("datasources.opencorporates.ratelimit", 5)
 	viper.SetDefault("datasources.companieshouse.enabled", false)
-	viper.SetDefault("datasources.companieshouse.ratelimit", 5)
+	viper.SetDefault("datasources.companieshouse.ratelimit", 10)
 
 	viper.AutomaticEnv()
 
