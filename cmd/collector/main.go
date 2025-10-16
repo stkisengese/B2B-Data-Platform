@@ -8,16 +8,36 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stkisengese/B2B-Data-Platform/internal/api"
 	"github.com/stkisengese/B2B-Data-Platform/internal/api/sources"
 	"github.com/stkisengese/B2B-Data-Platform/internal/config"
+	"github.com/stkisengese/B2B-Data-Platform/internal/database"
+	"github.com/stkisengese/B2B-Data-Platform/internal/services"
 )
 
 func main() {
+	// Setup logging
+	logger := logrus.New()
+	logger.SetLevel(logrus.InfoLevel)
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		logger.SetLevel(logrus.DebugLevel)
+	}
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
+
+	// Initialize database connection
+	db, err := database.NewDatabaseConnection(cfg.Database.Path)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	// Create storage layer instance to abstract database operations
+	storage := database.NewStorage(db)
 
 	// Initialize source manager
 	sourceManager := api.NewSourceManager()
