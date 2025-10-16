@@ -42,6 +42,7 @@ project-root/
     ```bash
     git clone https://github.com/stkisengese/B2B-Data-Platform.git
     cd B2B-Data-Platform
+    cp .env.example .env
     ```
 
 2.  **Build and run the services using Docker Compose:**
