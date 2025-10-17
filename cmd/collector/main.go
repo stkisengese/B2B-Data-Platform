@@ -46,14 +46,18 @@ func main() {
 	if cfg.DataSources.CompaniesHouse.Enabled {
 		chSource := sources.NewCompaniesHouseSource(cfg.DataSources.CompaniesHouse.APIKey)
 		if err := sourceManager.RegisterSource(chSource); err != nil {
-			log.Printf("Failed to register Companies House source: %v", err)
+			logger.WithError(err).Error("Failed to register Companies House source")
+		} else {
+			logger.Info("Companies House source registered")
 		}
 	}
 
 	if cfg.DataSources.OpenCorporates.Enabled {
 		ocSource := sources.NewOpenCorporatesSource(cfg.DataSources.OpenCorporates.APIKey)
 		if err := sourceManager.RegisterSource(ocSource); err != nil {
-			log.Printf("Failed to register OpenCorporates source: %v", err)
+			logger.WithError(err).Error("Failed to register OpenCorporates source")
+		} else {
+			logger.Info("OpenCorporates source registered")
 		}
 	}
 
