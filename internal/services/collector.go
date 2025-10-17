@@ -96,3 +96,19 @@ func (cs *CollectorService) ScheduleCollection(request CollectionRequest) (strin
 
 	return job.GetID(), nil
 }
+
+// GetJobStatus returns the current status of a job by its ID
+func (cs *CollectorService) GetJobStatus(jobID string) (*JobStatus, error) {
+	return cs.jobTracker.GetJobStatus(jobID)
+}
+
+// GetMetrics returns collector service metrics
+func (cs *CollectorService) GetMetrics() CollectorMetrics {
+	poolMetrics := cs.workerPool.GetMetrics()
+	jobMetrics := cs.jobTracker.GetMetrics()
+
+	return CollectorMetrics{
+		PoolMetrics: poolMetrics,
+		JobMetrics:  jobMetrics,
+	}
+}
