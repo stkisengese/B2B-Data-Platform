@@ -103,11 +103,11 @@ func (cs *CollectorService) GetJobStatus(jobID string) (*JobStatus, error) {
 }
 
 // GetMetrics returns collector service metrics
-func (cs *CollectorService) GetMetrics() CollectorMetrics {
+func (cs *CollectorService) GetMetrics() *CollectorMetrics {
 	poolMetrics := cs.workerPool.GetMetrics()
 	jobMetrics := cs.jobTracker.GetMetrics()
 
-	return CollectorMetrics{
+	return &CollectorMetrics{
 		PoolMetrics: poolMetrics,
 		JobMetrics:  jobMetrics,
 	}
