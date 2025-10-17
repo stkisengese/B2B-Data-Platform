@@ -61,3 +61,38 @@ func (cs *CollectorService) Stop(timeout time.Duration) error {
 	return cs.workerPool.Shutdown(timeout)
 }
 
+// ScheduleCollection creates and queues a collection job for execution
+func (cs *CollectorService) ScheduleCollection(request CollectionRequest) (string, error) {
+	// Create collection job and inject dependencies(source manager, storage, logger)
+	job := &CollectionJobImpl{
+		BaseJob: workers.BaseJob{
+			ID:         generateJobID(),
+			Type:       workers.CollectionJob,
+			Status:     workers.StatusPending,
+			CreatedAt:  time.Now(),
+			MaxRetries: request.MaxRetries,
+		},
+		Request:       request,
+		SourceManager: cs.sourceManager,
+		Storage:       cs.storage,
+		Logger:        cs.logger,
+	}
+
+	// Track job status in job tracker for monitoring and metrics purposes
+	cs.jobTracker.TrackJob(job)
+
+	// Submit job to worker pool for processing
+	if err := cs.workerPool.Submit(job); err != nil {
+		cs.jobTracker.UpdateJob(job.GetID(), workers.StatusFailed, err)
+		return "", fmt.Errorf("failed to submit collection job: %w", err)
+	}
+
+	// Log job scheduling
+	cs.logger.WithFields(logrus.Fields{
+		"job_id": job.GetID(),
+		"source": request.Source,
+		"query":  request.Params.Query,
+	}).Info("Collection job scheduled")
+
+	return job.GetID(), nil
+}
