@@ -2,6 +2,7 @@ package workers
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -81,4 +82,63 @@ func (p *WorkerPool) Start() error {
 
 	p.logger.Info("Worker pool started successfully")
 	return nil
+}
+
+// Submit adds a job to the processing queue of the worker pool for execution
+func (p *WorkerPool) Submit(job Job) error {
+	select {
+	case <-p.ctx.Done():
+		return fmt.Errorf("worker pool is shutting down")
+
+	// Submit job to the queue
+	case p.jobQueue <- job:
+		p.metrics.mutex.Lock()
+		p.metrics.JobsProcessed++
+		p.metrics.QueueLength = int32(len(p.jobQueue))
+		p.metrics.LastActivity = time.Now()
+		p.metrics.mutex.Unlock()
+		return nil
+	default:
+		return fmt.Errorf("job queue is full")
+	}
+}
+
+// Shutdown gracefully stops all workers
+func (p *WorkerPool) Shutdown(timeout time.Duration) error {
+	p.shutdownOnce.Do(func() {
+		p.logger.Info("Shutting down worker pool")
+
+		// Stop accepting new jobs
+		close(p.jobQueue)
+
+		// Cancel context to signal workers to stop
+		p.cancel()
+
+		// Wait for workers to finish with timeout
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			p.wg.Wait()
+		}()
+
+		select {
+		case <-done:
+			p.logger.Info("Worker pool shutdown completed")
+		case <-time.After(timeout):
+			p.logger.Warn("Worker pool shutdown timed out")
+		}
+	})
+
+	return nil
+}
+
+// GetMetrics returns current pool metrics
+func (p *WorkerPool) GetMetrics() *PoolMetrics {
+	p.metrics.mutex.RLock()
+	defer p.metrics.mutex.RUnlock()
+
+	// Update queue length before returning
+	p.metrics.QueueLength = int32(len(p.jobQueue))
+
+	return p.metrics
 }
