@@ -4,13 +4,26 @@ server:
 database:
   path: "b2b.db"
 
+collector:
+  worker_count: 5              # Number of concurrent workers
+  queue_size: 100              # Maximum queued jobs
+  retry_attempts: 3            # Retry failed jobs
+  retry_delay: "5s"            # Delay between retries
+  shutdown_timeout: "30s"      # Graceful shutdown timeout
+  cleanup_interval: "1h"       # Job cleanup frequency
+  job_retention: "24h"         # Keep job history duration
+
 datasources:
-  # opencorporates:
-  #   api_key: "${OPENCORPORATES_API_KEY}"
-  #   enabled: false
-  #   rate_limit: 5
+  opencorporates:
+    api_key: "${OPENCORPORATES_API_KEY}"
+    enabled: false
+    rate_limit: 5
   
-companieshouse:
-  api_key: "${COMPANIES_HOUSE_API_KEY}"
-  enabled: false
-  rate_limit: 10
+  companieshouse:
+    api_key: "${COMPANIES_HOUSE_API_KEY}"
+    enabled: false
+    rate_limit: 10
+
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "json" # json, text
