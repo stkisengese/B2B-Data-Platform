@@ -48,3 +48,53 @@ func (w *Worker) Start(ctx context.Context) {
 		}
 	}
 }
+
+// processJob executes a single job and updates metrics
+func (w *Worker) processJob(ctx context.Context, job Job) {
+	start := time.Now()
+
+	w.logger.WithFields(logrus.Fields{
+		"worker_id": w.id,
+		"job_id":    job.GetID(),
+		"job_type":  job.GetType(),
+	}).Debug("Processing job")
+
+	err := job.Execute(ctx)
+	duration := time.Since(start)
+
+	// Update metrics
+	w.metrics.mutex.Lock()
+	if err != nil {
+		w.metrics.JobsFailed++
+		w.logger.WithFields(logrus.Fields{
+			"worker_id": w.id,
+			"job_id":    job.GetID(),
+			"duration":  duration,
+			"error":     err,
+		}).Error("Job failed")
+	} else {
+		w.metrics.JobsCompleted++
+		w.logger.WithFields(logrus.Fields{
+			"worker_id": w.id,
+			"job_id":    job.GetID(),
+			"duration":  duration,
+		}).Debug("Job completed successfully")
+	}
+
+	// Update average execution time
+	if w.metrics.JobsCompleted > 0 {
+		w.metrics.AverageExecTime = time.Duration(
+			(int64(w.metrics.AverageExecTime)*w.metrics.JobsCompleted + int64(duration)) / (w.metrics.JobsCompleted + 1),
+		)
+	} else {
+		w.metrics.AverageExecTime = duration
+	}
+	w.metrics.mutex.Unlock()
+
+	// Handle job callbacks
+	if err != nil {
+		job.OnFailure(err)
+	} else {
+		job.OnSuccess()
+	}
+}
