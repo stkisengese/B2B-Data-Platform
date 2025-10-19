@@ -49,7 +49,7 @@ type JobMetrics struct {
 // CollectorMetrics combines pool and job metrics
 type CollectorMetrics struct {
 	PoolMetrics *workers.PoolMetrics `json:"pool_metrics"`
-	JobMetrics  JobMetrics          `json:"job_metrics"`
+	JobMetrics  JobMetrics           `json:"job_metrics"`
 }
 
 // NewJobTracker creates a new job tracker
@@ -81,4 +81,39 @@ func (jt *JobTracker) UpdateJob(jobID string, status workers.JobStatus, err erro
 		tracked.Error = err
 		tracked.UpdatedAt = time.Now()
 	}
+}
+
+// GetJobStatus returns the status of a specific job by ID
+func (jt *JobTracker) GetJobStatus(jobID string) (*JobStatus, error) {
+	jt.mutex.RLock()
+	defer jt.mutex.RUnlock()
+
+	// Find the tracked job by ID
+	tracked, exists := jt.jobs[jobID]
+	if !exists {
+		return nil, fmt.Errorf("job %s not found", jobID)
+	}
+
+	// Build the JobStatus response
+	status := &JobStatus{
+		ID:          tracked.Job.GetID(),
+		Type:        tracked.Job.GetType(),
+		Status:      tracked.Status,
+		RetryCount:  tracked.Job.GetRetryCount(),
+		CreatedAt:   tracked.Job.GetCreatedAt(),
+		StartedAt:   tracked.Job.GetStartedAt(),
+		CompletedAt: tracked.Job.GetCompletedAt(),
+	}
+
+	if tracked.Error != nil {
+		status.Error = tracked.Error.Error()
+	}
+
+	// Calculate duration if applicable 
+	if tracked.Job.GetStartedAt() != nil && tracked.Job.GetCompletedAt() != nil {
+		duration := tracked.Job.GetCompletedAt().Sub(*tracked.Job.GetStartedAt())
+		status.Duration = &duration
+	}
+
+	return status, nil
 }
