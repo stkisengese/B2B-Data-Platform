@@ -34,6 +34,9 @@ type Job interface {
 	OnFailure(error)
 	GetRetryCount() int
 	ShouldRetry(error) bool
+	GetCreatedAt() time.Time
+	GetStartedAt() *time.Time
+	GetCompletedAt() *time.Time
 }
 
 // BaseJob provides common functionality for all job types
@@ -88,4 +91,19 @@ func (bj *BaseJob) OnFailure(err error) {
 		bj.Status = StatusFailed
 		bj.CompletedAt = &now
 	}
+}
+
+// GetCreatedAt returns the job creation time
+func (bj *BaseJob) GetCreatedAt() time.Time {
+	return bj.CreatedAt
+}
+
+// GetStartedAt returns the job start time
+func (bj *BaseJob) GetStartedAt() *time.Time {
+	return bj.StartedAt
+}
+
+// GetCompletedAt returns the job completion time
+func (bj *BaseJob) GetCompletedAt() *time.Time {
+	return bj.CompletedAt
 }
