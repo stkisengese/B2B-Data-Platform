@@ -109,11 +109,63 @@ func (jt *JobTracker) GetJobStatus(jobID string) (*JobStatus, error) {
 		status.Error = tracked.Error.Error()
 	}
 
-	// Calculate duration if applicable 
+	// Calculate duration if applicable
 	if tracked.Job.GetStartedAt() != nil && tracked.Job.GetCompletedAt() != nil {
 		duration := tracked.Job.GetCompletedAt().Sub(*tracked.Job.GetStartedAt())
 		status.Duration = &duration
 	}
 
 	return status, nil
+}
+
+// GetMetrics returns job statistics
+func (jt *JobTracker) GetMetrics() JobMetrics {
+	jt.mutex.RLock()
+	defer jt.mutex.RUnlock()
+
+	metrics := JobMetrics{}
+	var lastJobTime time.Time
+
+	for _, tracked := range jt.jobs {
+		metrics.TotalJobs++
+
+		switch tracked.Status {
+		case workers.StatusPending:
+			metrics.PendingJobs++
+		case workers.StatusProcessing:
+			metrics.ProcessingJobs++
+		case workers.StatusCompleted:
+			metrics.CompletedJobs++
+		case workers.StatusFailed:
+			metrics.FailedJobs++
+		case workers.StatusRetrying:
+			metrics.RetryingJobs++
+		}
+
+		if tracked.UpdatedAt.After(lastJobTime) {
+			lastJobTime = tracked.UpdatedAt
+		}
+	}
+
+	metrics.LastJobAt = lastJobTime
+	return metrics
+}
+
+// CleanupOldJobs removes jobs older than the specified duration
+func (jt *JobTracker) CleanupOldJobs(maxAge time.Duration) int {
+	jt.mutex.Lock()
+	defer jt.mutex.Unlock()
+
+	cutoff := time.Now().Add(-maxAge)
+	cleaned := 0
+
+	for jobID, tracked := range jt.jobs {
+		if tracked.UpdatedAt.Before(cutoff) &&
+			(tracked.Status == workers.StatusCompleted || tracked.Status == workers.StatusFailed) {
+			delete(jt.jobs, jobID)
+			cleaned++
+		}
+	}
+
+	return cleaned
 }
