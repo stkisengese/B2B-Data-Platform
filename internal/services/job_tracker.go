@@ -58,3 +58,27 @@ func NewJobTracker() *JobTracker {
 		jobs: make(map[string]*TrackedJob),
 	}
 }
+
+// TrackJob adds a job to the tracker
+func (jt *JobTracker) TrackJob(job workers.Job) {
+	jt.mutex.Lock()
+	defer jt.mutex.Unlock()
+
+	jt.jobs[job.GetID()] = &TrackedJob{
+		Job:       job,
+		Status:    workers.StatusPending,
+		UpdatedAt: time.Now(),
+	}
+}
+
+// UpdateJob updates a job's status and error
+func (jt *JobTracker) UpdateJob(jobID string, status workers.JobStatus, err error) {
+	jt.mutex.Lock()
+	defer jt.mutex.Unlock()
+
+	if tracked, exists := jt.jobs[jobID]; exists {
+		tracked.Status = status
+		tracked.Error = err
+		tracked.UpdatedAt = time.Now()
+	}
+}
