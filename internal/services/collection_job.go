@@ -24,7 +24,7 @@ type CollectionJobImpl struct {
 	workers.BaseJob
 	Request       CollectionRequest
 	SourceManager *api.SourceManager
-	Storage       *database.Storage
+	Storage       database.Storage
 	Logger        *logrus.Logger
 }
 

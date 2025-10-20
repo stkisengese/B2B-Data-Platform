@@ -12,11 +12,11 @@ import (
 
 // CollectorService orchestrates data collection from multiple sources
 type CollectorService struct {
-	sourceManager *api.SourceManager
-	workerPool    *workers.WorkerPool
-	storage       *database.Storage
-	logger        *logrus.Logger
-	jobTracker    *JobTracker
+	sourceManager *api.SourceManager  // manages registered data sources
+	workerPool    *workers.WorkerPool // worker pool for processing collection jobs
+	storage       database.Storage    // interface type for decoupling storage implementation
+	logger        *logrus.Logger      // logger for logging events and errors
+	jobTracker    *JobTracker         // tracks job statuses and metrics
 }
 
 // CollectorConfig holds configuration for the collector service
@@ -29,7 +29,7 @@ type CollectorConfig struct {
 }
 
 // NewCollectorService creates a new collector service
-func NewCollectorService(sourceManager *api.SourceManager, storage *database.Storage, config CollectorConfig) *CollectorService {
+func NewCollectorService(sourceManager *api.SourceManager, storage database.Storage, config CollectorConfig) *CollectorService {
 	if config.Logger == nil {
 		config.Logger = logrus.New()
 	}
