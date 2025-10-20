@@ -124,7 +124,23 @@ func main() {
 		}
 	}
 
+	// Metrics reporting
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
 
+		for range ticker.C {
+			metrics := collector.GetMetrics()
+			logger.WithFields(logrus.Fields{
+				"active_workers":    metrics.PoolMetrics.ActiveWorkers,
+				"jobs_processed":    metrics.PoolMetrics.JobsProcessed,
+				"jobs_completed":    metrics.PoolMetrics.JobsCompleted,
+				"jobs_failed":       metrics.PoolMetrics.JobsFailed,
+				"average_exec_time": metrics.PoolMetrics.AverageExecTime,
+				"queue_length":      metrics.PoolMetrics.QueueLength,
+			}).Info("Collector metrics")
+		}
+	}()
 
 	// Set up graceful shutdown
 	quit := make(chan os.Signal, 1)
