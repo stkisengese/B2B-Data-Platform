@@ -11,18 +11,24 @@ import (
 	"github.com/stkisengese/B2B-Data-Platform/internal/api"
 )
 
-// Storage handles database operations for the collector
-type Storage struct {
+// Storage defines the interface/contract for data storage operations
+type Storage interface {
+	StoreRawRecord(ctx context.Context, record api.RawRecord) error
+	GetRawRecord(ctx context.Context, recordID string) (*api.RawRecord, error)
+}
+
+// SQLStorage is the concrete implementation of the Storage interface using sqlx.
+type SQLStorage struct {
 	db *sqlx.DB
 }
 
-// NewStorage creates a new storage instance
-func NewStorage(db *sqlx.DB) *Storage {
-	return &Storage{db: db}
+// NewStorage creates a new storage instance and returns it as the Storage interface.
+func NewStorage(db *sqlx.DB) Storage {
+	return &SQLStorage{db: db}
 }
 
 // StoreRawRecord saves a raw record to the database
-func (s *Storage) StoreRawRecord(ctx context.Context, record api.RawRecord) error {
+func (s *SQLStorage) StoreRawRecord(ctx context.Context, record api.RawRecord) error {
 	dataJSON, err := json.Marshal(record.Data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal record data: %w", err)
@@ -51,7 +57,7 @@ func (s *Storage) StoreRawRecord(ctx context.Context, record api.RawRecord) erro
 }
 
 // GetRawRecord retrieves a raw record by ID
-func (s *Storage) GetRawRecord(ctx context.Context, recordID string) (*api.RawRecord, error) {
+func (s *SQLStorage) GetRawRecord(ctx context.Context, recordID string) (*api.RawRecord, error) {
 	query := `
 		SELECT id, source, data, collected_at
 		FROM raw_records 
