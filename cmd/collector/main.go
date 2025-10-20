@@ -87,5 +87,20 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Collector service shutting down...")
+	logger.Info("Collector service shutting down...")
+
+	// Graceful shutdown with timeout
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := collector.Stop(30 * time.Second); err != nil {
+		logger.WithError(err).Error("Error during collector shutdown")
+	}
+
+	select {
+	case <-shutdownCtx.Done():
+		logger.Warn("Shutdown timeout exceeded")
+	default:
+		logger.Info("Collector service shutdown completed")
+	}
 }
