@@ -61,26 +61,70 @@ func main() {
 		}
 	}
 
-	// Example data collection
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	params := api.CollectionParams{
-		Query:  "technology",
-		Limit:  10,
-		Offset: 0,
+	// Initialize collector service
+	collectorConfig := services.CollectorConfig{
+		WorkerCount:   5,   // Configurable worker count
+		QueueSize:     100, // Configurable queue size
+		RetryAttempts: 3,
+		RetryDelay:    5 * time.Second,
+		Logger:        logger,
 	}
 
-	log.Println("Starting data collection from all sources...")
-	results, errors := sourceManager.CollectFromAllSources(ctx, params)
+	collector := services.NewCollectorService(sourceManager, storage, collectorConfig)
 
-	for source, records := range results {
-		log.Printf("Collected %d records from %s", len(records), source)
+	// Start collector service
+	if err := collector.Start(); err != nil {
+		log.Fatalf("Failed to start collector service: %v", err)
 	}
 
-	for source, err := range errors {
-		log.Printf("Error collecting from %s: %v", source, err)
+	logger.Info("Collector service started successfully")
+
+	// Example: Schedule a collection job
+	if len(sourceManager.ListSources()) > 0 {
+		request := services.CollectionRequest{
+			Source: sourceManager.ListSources()[0], // Use first available source
+			Params: api.CollectionParams{
+				Query:  "technology",
+				Limit:  50,
+				Offset: 0,
+			},
+			MaxRetries: 3,
+			Timeout:    30 * time.Second,
+		}
+
+		jobID, err := collector.ScheduleCollection(request)
+		if err != nil {
+			logger.WithError(err).Error("Failed to schedule collection job")
+		} else {
+			logger.WithField("job_id", jobID).Info("Collection job scheduled")
+
+			// Monitor job progress
+			go func() {
+				ticker := time.NewTicker(5 * time.Second)
+				defer ticker.Stop()
+
+				for range ticker.C {
+					status, err := collector.GetJobStatus(jobID)
+					if err != nil {
+						logger.WithError(err).Error("Failed to get job status")
+						return
+					}
+
+					logger.WithFields(logrus.Fields{
+						"job_id":      jobID,
+						"status":      status.Status,
+						"retry_count": status.RetryCount,
+					}).Info("Job status update")
+
+					if status.Status == "completed" || status.Status == "failed" {
+						return
+					}
+				}
+			}()
+		}
 	}
+
+
 
 	// Set up graceful shutdown
 	quit := make(chan os.Signal, 1)
