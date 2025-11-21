@@ -2,7 +2,7 @@ package workers
 
 import (
 	"context"
-	// "fmt"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -119,5 +119,56 @@ func TestWorkerPool_SubmitJob(t *testing.T) {
 	metrics := pool.GetMetrics()
 	if metrics.JobsProcessed != 1 {
 		t.Errorf("Expected 1 job processed, got %d", metrics.JobsProcessed)
+	}
+}
+
+func TestWorkerPool_JobExecution(t *testing.T) {
+	config := PoolConfig{
+		WorkerCount: 2,
+		QueueSize:   5,
+		Logger:      logrus.New(),
+	}
+
+	pool := NewWorkerPool(config)
+	pool.Start()
+	defer pool.Shutdown(2 * time.Second)
+
+	// Submit multiple jobs
+	jobCount := 5
+	var completedJobs int32
+
+	for i := 0; i < jobCount; i++ {
+		job := &MockJob{
+			BaseJob: BaseJob{
+				ID:   fmt.Sprintf("test-job-%d", i),
+				Type: CollectionJob,
+			},
+			ExecuteFunc: func(ctx context.Context) error {
+				time.Sleep(10 * time.Millisecond) // Simulate work
+				atomic.AddInt32(&completedJobs, 1)
+				return nil
+			},
+		}
+
+		err := pool.Submit(job)
+		if err != nil {
+			t.Errorf("Failed to submit job %d: %v", i, err)
+		}
+	}
+
+	// Wait for all jobs to complete
+	timeout := time.After(2 * time.Second)
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeout:
+			t.Fatalf("Timeout waiting for jobs to complete. Completed: %d", atomic.LoadInt32(&completedJobs))
+		case <-ticker.C:
+			if atomic.LoadInt32(&completedJobs) == int32(jobCount) {
+				return // All jobs completed
+			}
+		}
 	}
 }
