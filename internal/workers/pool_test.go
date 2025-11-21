@@ -78,3 +78,46 @@ func TestWorkerPool_StartAndShutdown(t *testing.T) {
 		t.Errorf("Expected 0 active workers after shutdown, got %d", finalMetrics.ActiveWorkers)
 	}
 }
+
+func TestWorkerPool_SubmitJob(t *testing.T) {
+	config := PoolConfig{
+		WorkerCount: 1,
+		QueueSize:   2,
+		Logger:      logrus.New(),
+	}
+
+	pool := NewWorkerPool(config)
+	pool.Start()
+	defer pool.Shutdown(1 * time.Second)
+
+	// Create a job that increments a counter
+	var executionCount int32
+	job := &MockJob{
+		BaseJob: BaseJob{
+			ID:   "test-job-1",
+			Type: CollectionJob,
+		},
+		ExecuteFunc: func(ctx context.Context) error {
+			atomic.AddInt32(&executionCount, 1)
+			return nil
+		},
+	}
+
+	// Submit job
+	err := pool.Submit(job)
+	if err != nil {
+		t.Fatalf("Failed to submit job: %v", err)
+	}
+
+	// Wait for job to complete
+	time.Sleep(200 * time.Millisecond)
+
+	if atomic.LoadInt32(&executionCount) != 1 {
+		t.Errorf("Expected job to execute once, got %d executions", executionCount)
+	}
+
+	metrics := pool.GetMetrics()
+	if metrics.JobsProcessed != 1 {
+		t.Errorf("Expected 1 job processed, got %d", metrics.JobsProcessed)
+	}
+}
