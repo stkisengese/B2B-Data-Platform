@@ -2,6 +2,7 @@ package workers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -14,6 +15,7 @@ import (
 type MockJob struct {
 	BaseJob
 	ExecuteFunc   func(ctx context.Context) error
+	OnFailureFunc func(err error)
 	shouldExecute int32
 }
 
@@ -23,6 +25,14 @@ func (mj *MockJob) Execute(ctx context.Context) error {
 		return mj.ExecuteFunc(ctx)
 	}
 	return nil
+}
+
+func (mj *MockJob) OnFailure(err error) {
+	if mj.OnFailureFunc != nil {
+		mj.OnFailureFunc(err)
+	} else {
+		mj.BaseJob.OnFailure(err)
+	}
 }
 
 func TestWorkerPool_NewWorkerPool(t *testing.T) {
@@ -170,5 +180,54 @@ func TestWorkerPool_JobExecution(t *testing.T) {
 				return // All jobs completed
 			}
 		}
+	}
+}
+
+func TestWorkerPool_FailedJob(t *testing.T) {
+	config := PoolConfig{
+		WorkerCount: 1,
+		QueueSize:   2,
+		Logger:      logrus.New(),
+	}
+
+	pool := NewWorkerPool(config)
+	pool.Start()
+	defer pool.Shutdown(1 * time.Second)
+
+	expectedError := errors.New("test error")
+	failureSignal := make(chan error, 1)
+
+	job := &MockJob{
+		BaseJob: BaseJob{
+			ID:   "failing-job",
+			Type: CollectionJob,
+		},
+		ExecuteFunc: func(ctx context.Context) error {
+			return expectedError
+		},
+	}
+
+	job.OnFailureFunc = func(err error) {
+		job.BaseJob.OnFailure(err)
+		failureSignal <- err
+	}
+
+	err := pool.Submit(job)
+	if err != nil {
+		t.Fatalf("Failed to submit job: %v", err)
+	}
+
+	select {
+	case err := <-failureSignal:
+		if err != expectedError {
+			t.Errorf("Expected error %v, got %v", expectedError, err)
+		}
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timeout waiting for OnFailure callback")
+	}
+
+	metrics := pool.GetMetrics()
+	if metrics.JobsFailed != 1 {
+		t.Errorf("Expected 1 failed job, got %d", metrics.JobsFailed)
 	}
 }
